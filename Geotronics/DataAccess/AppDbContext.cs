@@ -9,6 +9,11 @@ public class AppDbContext : DbContext
     public virtual DbSet<RandomPoint> Points { get; set; }
     public virtual DbSet<Wojewodztwa> Prowincje { get; set; }
     
+    public AppDbContext() : base()
+    {
+        
+    }
+    
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
         

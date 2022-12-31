@@ -20,7 +20,10 @@ builder.Services.AddEntityFrameworkNpgsql().AddDbContext<AppDbContext>(opt =>
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(s =>
+{
+
+});
 builder.Services.AddServices();
 
 builder.Services.Configure<JsonOptions>(options =>
@@ -35,8 +38,15 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(x =>
+    {
+        //x.RouteTemplate = "mycoolapi/swagger/{documentname}/swagger.json";
+    });
+    app.UseSwaggerUI(options =>
+    {
+        //options.SwaggerEndpoint("v1/swagger.json", "v1");
+        //options.RoutePrefix = "mycoolapi/swagger";
+    });
 }
 
 app.UseHttpsRedirection();

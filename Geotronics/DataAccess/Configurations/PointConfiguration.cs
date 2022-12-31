@@ -10,8 +10,7 @@ public class PointConfiguration : IEntityTypeConfiguration<RandomPoint>
     {
         builder.ToTable("Points");
         builder.HasKey(x => x.Id);
-        //builder.Property(x => x.Coordinate).HasColumnName("coordinate");
-        
+
         builder.HasOne<Wojewodztwa>().WithMany().HasForeignKey(x => x.WojewodztwaId);
     }
 }

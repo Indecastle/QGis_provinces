@@ -22,4 +22,8 @@
         </PackageReference>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Geotronics\Geotronics.csproj" />
+    </ItemGroup>
+
 </Project>

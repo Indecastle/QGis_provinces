@@ -1,6 +1,5 @@
 using Geotronics.Controllers.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Geotronics.Models;
 using Geotronics.Services.Geotronics;
 
 namespace Geotronics.Controllers;
@@ -10,28 +9,40 @@ namespace Geotronics.Controllers;
 public class GeotronicsController : ControllerBase
 {
     private readonly IGeotronicsService _geotronicsService;
+    private readonly IGeotronicsDrawingService _geotronicsDrawingService;
 
-    public GeotronicsController(IGeotronicsService geotronicsService)
+    public GeotronicsController(IGeotronicsService geotronicsService, IGeotronicsDrawingService geotronicsDrawingService)
     {
         _geotronicsService = geotronicsService;
+        _geotronicsDrawingService = geotronicsDrawingService;
+    }
+
+    [HttpGet]
+    public async Task<RandomPointDto[]> GetMany(int? skipPoints = 0, int? takePoints = 10)
+    {
+        var items = await _geotronicsService.GetAllAsync(skipPoints, takePoints);
+        return items.Select(x => new RandomPointDto(x)).ToArray();
     }
     
-    [HttpGet]
-    public async Task<RandomPointDto[]> Get(int? offset = 0, int? limit = 10)
+    /// <response code="400">If the "Resolution" parameter is greater than 20000</response>
+    [HttpGet("image")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<FileStreamResult> GetImage(int resolution = 2048, int? skipPoints = 0, int? takePoints = 1000, double dotSize = 1, bool triangulate = false)
     {
-        var items = await _geotronicsService.GetAll(offset, limit);
-        return items.Select(x => new RandomPointDto(x)).ToArray();
+        var stream = await _geotronicsDrawingService.GenerateImage(resolution, skipPoints, takePoints, dotSize, triangulate);
+        
+        return new FileStreamResult(stream, "image/png");
     }
 
     [HttpPut("generate-points")]
-    public async Task GeneratePoints()
+    public async Task GeneratePoints(int count = 1000)
     {
-        await _geotronicsService.GeneratePoints();
+        await _geotronicsService.GeneratePointsAsync(count);
     }
-    
-    [HttpDelete()]
+
+    [HttpDelete]
     public async Task ClearTable()
     {
-        await _geotronicsService.ClearTable();
+        await _geotronicsService.ClearTableAsync();
     }
 }

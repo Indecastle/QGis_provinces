@@ -10,10 +10,12 @@ public class RandomPointDto
         WojewodztwaId = point.WojewodztwaId;
         X = point.Coordinate.X;
         Y = point.Coordinate.Y;
+        Z = point.Coordinate.Z;
     }
 
     public Guid Id { get; }
     public int WojewodztwaId { get; }
     public double X { get; }
     public double Y { get; }
+    public double Z { get; }
 }
