@@ -2,8 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Geotronics.DataAccess;
 using Geotronics.Models;
 using Geotronics.Utils;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.Triangulate.Polygon;
 using static System.Linq.Enumerable;
 
 namespace Geotronics.Services.Geotronics;

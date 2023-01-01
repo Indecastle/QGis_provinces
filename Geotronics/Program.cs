@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FluentMigrator.Runner;
 using Geotronics.DataAccess;
 using Geotronics.Migrations;
@@ -17,7 +18,8 @@ builder.Services.AddFluentMigratorCore()
 builder.Services.AddEntityFrameworkNpgsql().AddDbContext<AppDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options => 
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(s =>
@@ -36,7 +38,7 @@ builder.Services.Configure<JsonOptions>(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (true || app.Environment.IsDevelopment())
 {
     app.UseSwagger(x =>
     {

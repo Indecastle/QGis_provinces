@@ -1,6 +1,6 @@
 namespace Geotronics.Services.Geotronics;
 
-public enum FillPolygonType
+public enum FillPolygonMode
 {
     Gradient,
     Random,

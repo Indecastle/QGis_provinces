@@ -1,13 +1,12 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using ColorMine.ColorSpaces;
 using Geotronics.DataAccess;
 using Geotronics.Utils;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Triangulate;
 using NetTopologySuite.Triangulate.Polygon;
 using Point = System.Drawing.Point;
 
@@ -15,7 +14,7 @@ namespace Geotronics.Services.Geotronics;
 
 public interface IGeotronicsDrawingService
 {
-    Task<Stream> GenerateImage(int resolution, int? offset, int? limit, double dotSize, bool triangulate);
+    Task<Stream> GenerateImage(int resolution, int? offset, int? limit, double dotSize, TriangulationType triangulationType);
 }
 
 [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
@@ -32,7 +31,7 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
         _appDbContext = appDbContext;
     }
 
-    public async Task<Stream> GenerateImage(int resolution, int? offset, int? limit, double dotSize, bool triangulate)
+    public async Task<Stream> GenerateImage(int resolution, int? offset, int? limit, double dotSize, TriangulationType triangulationType)
     {
         var provinces = await _appDbContext.Prowincje.ToArrayAsync();
         var allCoordinates = provinces.SelectMany(x => x.Geom.Coordinates).ToArray();
@@ -48,18 +47,21 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
         Graphics graph = Graphics.FromImage(image);
         graph.Clear(Color.Azure);
 
-        if (triangulate)
-            await DrawTriangulation(graph, provinces, data);
+        if (triangulationType == TriangulationType.FilledProvinces)
+            await DrawTriangulationProvinces(graph, provinces, data, triangulationType);
         else
             DrawProvinces(graph, provinces, data);
 
-        await DrawPoints(graph, data);
+        if (triangulationType == TriangulationType.RandomPoints || triangulationType == TriangulationType.FilledRandomPoints)
+            await DrawTriangulationPoints(graph, data, triangulationType);
+        else
+            await DrawPoints(graph, data);
 
         image.RotateFlip(RotateFlipType.Rotate180FlipX);
         return CreateMemoryStream(image);
     }
 
-    private async Task DrawTriangulation(Graphics graph, Wojewodztwa[] provinces, DrawingDataSource data)
+    private async Task DrawTriangulationProvinces(Graphics graph, Wojewodztwa[] provinces, DrawingDataSource data, TriangulationType triangulationType)
     {
         var geometriesGroup = provinces
             .Select(x => new PolygonTriangulator(x.Geom).GetResult() as GeometryCollection)
@@ -71,14 +73,18 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             foreach (var geometry in geometries)
                 pointsGroups.Add(GetPolygon(geometry.Coordinates, data));
         });
-
-        DrawPolygons(graph, pointsGroups, data, FillPolygonType.Random);
+        
+        var fillMode = triangulationType == TriangulationType.FilledProvinces
+            ? FillPolygonMode.Random
+            : FillPolygonMode.NoFill;
+        
+        DrawPolygons(graph, pointsGroups, data, fillMode);
     }
 
     private void DrawProvinces(Graphics graph, Wojewodztwa[] provinces, DrawingDataSource data)
     {
         var pointsGroups = provinces.Select(x => GetPolygon(x.Geom!.Coordinates, data));
-        DrawPolygons(graph, pointsGroups, data, FillPolygonType.Gradient);
+        DrawPolygons(graph, pointsGroups, data, FillPolygonMode.Gradient);
     }
 
     private async Task DrawPoints(Graphics graph, DrawingDataSource data)
@@ -98,22 +104,39 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
                     data.DotRadius);
         }
     }
+    
+    private async Task DrawTriangulationPoints(Graphics graph, DrawingDataSource data, TriangulationType triangulationType)
+    {
+        var points = await _geotronicsService.GetAllAsync(data.Offset, data.Limit);
+
+        var vtb = new DelaunayTriangulationBuilder();
+        vtb.SetSites(points.Select(x => x.Coordinate.Coordinate).ToArray());
+        
+        var geomColl = vtb.GetTriangles(new GeometryFactory());
+        var pointsGroups = geomColl.Select(x => GetPolygon(x.Coordinates, data)).ToArray();
+
+        var fillMode = triangulationType == TriangulationType.FilledRandomPoints
+            ? FillPolygonMode.Random
+            : FillPolygonMode.NoFill;
+        
+        DrawPolygons(graph, pointsGroups, data, fillMode);
+    }
 
     private Point[] GetPolygon(Coordinate[] coordinates, DrawingDataSource data) =>
         coordinates.Select(c => data.GetCenterPoint(c.X, c.Y)).ToArray();
 
     private void DrawPolygons(Graphics graph, IEnumerable<Point[]> pointsGroups, DrawingDataSource data,
-        FillPolygonType fillType = FillPolygonType.NoFill)
+        FillPolygonMode fillMode = FillPolygonMode.NoFill)
     {
-        if (fillType != FillPolygonType.NoFill)
+        if (fillMode != FillPolygonMode.NoFill)
         {
-            switch (fillType)
+            switch (fillMode)
             {
-                case FillPolygonType.Gradient:
+                case FillPolygonMode.Gradient:
                     foreach (var points in pointsGroups)
                         graph.FillPolygon(data.GradientBrush, points);
                     break;
-                case FillPolygonType.Random:
+                case FillPolygonMode.Random:
                     var brushEnumerator = DrawingUtils.RandomBrushEnumerator().GetEnumerator();
                     foreach (var points in pointsGroups)
                     {

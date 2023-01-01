@@ -27,9 +27,9 @@ public class GeotronicsController : ControllerBase
     /// <response code="400">If the "Resolution" parameter is greater than 20000</response>
     [HttpGet("image")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<FileStreamResult> GetImage(int resolution = 2048, int? skipPoints = 0, int? takePoints = 1000, double dotSize = 1, bool triangulate = false)
+    public async Task<FileStreamResult> GetImage(int resolution = 2048, int? skipPoints = 0, int? takePoints = 1000, double dotSize = 1, TriangulationType triangulationType = TriangulationType.NoTriangulate)
     {
-        var stream = await _geotronicsDrawingService.GenerateImage(resolution, skipPoints, takePoints, dotSize, triangulate);
+        var stream = await _geotronicsDrawingService.GenerateImage(resolution, skipPoints, takePoints, dotSize, triangulationType);
         
         return new FileStreamResult(stream, "image/png");
     }
