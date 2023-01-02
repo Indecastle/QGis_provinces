@@ -16,7 +16,7 @@ public class DrawingDataSource
         MaxVec = maxVec;
         Width = maxVec.X - minVec.X;
         Height = maxVec.Y - minVec.Y;
-        AspectRatio = Width / Height;
+        AspectRatio = Height / Width;
         ImageSize = resolution <= MAX_IMAGE_SIZE
             ? resolution
             : throw new InvalidConstraintException("\"Resolution\" parameter must be no more than 20000");
