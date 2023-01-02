@@ -1,3 +1,4 @@
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Geotronics.DataAccess;
 using Geotronics.Models;
@@ -41,10 +42,10 @@ public class GeotronicsService : IGeotronicsService
         var rand = new Random();
 
         var points = Range(0, count)
-            .Select(_ => GeometryUtils.GeneratePointInsidePolygon(provinces[rand.Next(0, provinces.Length)], rand));
-
-        await _dbContext.AddRangeAsync(points);
-        await _dbContext.SaveChangesAsync();
+            .Select(_ => GeometryUtils.GeneratePointInsidePolygon(provinces[rand.Next(0, provinces.Length)], rand)).ToArray();
+        
+        await _dbContext.BulkInsertAsync(points);
+        await _dbContext.BulkSaveChangesAsync();
     }
 
     public async Task ClearTableAsync()
