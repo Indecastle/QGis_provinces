@@ -17,11 +17,11 @@ public static class GeometryUtils
 
         do
         {
-            point.X = rand.Next((int)minVec.X, (int)maxVec.X);
-            point.Y = rand.Next((int)minVec.Y, (int)maxVec.Y);
-            point.Z = rand.Next(0, MAX_HEIGHT);
-        } while (!IsPointInPolygon(coordinates, point));
-
+            point.X = minVec.X + (maxVec.X - minVec.X) * rand.NextSingle();
+            point.Y = minVec.Y + (maxVec.Y - minVec.Y) * rand.NextSingle();
+        } while (!province.PreparedGeometry.Contains(point));
+        
+        point.Z = rand.Next(0, MAX_HEIGHT);
         return RandomPoint.New(province.Id, point);
     }
 
