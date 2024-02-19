@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geotronics", "Geotronics\Geotronics.csproj", "{01FBE091-984D-46FD-8ED2-516DC2171EC3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeotronicsTests", "GeotronicsTests\GeotronicsTests.csproj", "{B1088DB7-BDC8-47CE-9C59-6C8C474DDEE2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeotronicsTests.Integration", "GeotronicsTests.Integration\GeotronicsTests.Integration.csproj", "{19A6F39B-5F94-4B87-92AA-E95C1D8E432F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geotronics.Migrations", "Geotronics.Migrations\Geotronics.Migrations.csproj", "{94FDBD39-E227-45C3-8D45-5BE2730A9A72}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{01FBE091-984D-46FD-8ED2-516DC2171EC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01FBE091-984D-46FD-8ED2-516DC2171EC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01FBE091-984D-46FD-8ED2-516DC2171EC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01FBE091-984D-46FD-8ED2-516DC2171EC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1088DB7-BDC8-47CE-9C59-6C8C474DDEE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1088DB7-BDC8-47CE-9C59-6C8C474DDEE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1088DB7-BDC8-47CE-9C59-6C8C474DDEE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1088DB7-BDC8-47CE-9C59-6C8C474DDEE2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19A6F39B-5F94-4B87-92AA-E95C1D8E432F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19A6F39B-5F94-4B87-92AA-E95C1D8E432F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19A6F39B-5F94-4B87-92AA-E95C1D8E432F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19A6F39B-5F94-4B87-92AA-E95C1D8E432F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94FDBD39-E227-45C3-8D45-5BE2730A9A72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94FDBD39-E227-45C3-8D45-5BE2730A9A72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94FDBD39-E227-45C3-8D45-5BE2730A9A72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94FDBD39-E227-45C3-8D45-5BE2730A9A72}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
