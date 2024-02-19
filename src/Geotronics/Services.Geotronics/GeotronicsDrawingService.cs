@@ -1,14 +1,18 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Drawing.Imaging;
 using Geotronics.DataAccess;
 using Geotronics.Utils;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Triangulate;
 using NetTopologySuite.Triangulate.Polygon;
-using Point = System.Drawing.Point;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using Point = SixLabors.ImageSharp.Point;
 
 namespace Geotronics.Services.Geotronics;
 
@@ -20,7 +24,7 @@ public interface IGeotronicsDrawingService
 [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility")]
 public class GeotronicsDrawingService : IGeotronicsDrawingService
 {
-    private readonly Pen _black_pen = new(Brushes.Black);
+    private readonly Pen _black_pen = new SolidPen(Color.Black);
 
     private readonly IGeotronicsService _geotronicsService;
     private readonly AppDbContext _appDbContext;
@@ -43,31 +47,33 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             offset,
             limit);
 
-        Image image = new Bitmap(data.ImageSize, (int)(data.ImageSize * data.AspectRatio));
-        Graphics graph = Graphics.FromImage(image);
-        graph.Clear(Color.Azure);
+        Image image = new Image<Rgba32>(data.ImageSize, (int)(data.ImageSize * data.AspectRatio));
+        // Graphics graph = Graphics.FromImage(image);
+        // graph.Clear(Color.Azure);
+        image.Mutate(x => x.Clear(Color.Azure));
 
         if (triangulationType == TriangulationType.FilledProvinces)
-            await DrawTriangulationProvinces(graph, provinces, data, triangulationType);
+            await DrawTriangulationProvinces(image, provinces, data, triangulationType);
         else
-            DrawProvinces(graph, provinces, data);
+            DrawProvinces(image, provinces, data);
 
         if (triangulationType == TriangulationType.RandomPoints || triangulationType == TriangulationType.FilledRandomPoints)
-            await DrawTriangulationPoints(graph, data, triangulationType);
+            await DrawTriangulationPoints(image, data, triangulationType);
         else
-            await DrawPoints(graph, data);
+            await DrawPoints(image, data);
 
-        image.RotateFlip(RotateFlipType.Rotate180FlipX);
+        image.Mutate(x => x.RotateFlip(RotateMode.Rotate180, FlipMode.Horizontal));
+        // image.RotateFlip(RotateFlipType.Rotate180FlipX);
         return CreateMemoryStream(image);
     }
 
-    private async Task DrawTriangulationProvinces(Graphics graph, Regions[] provinces, DrawingDataSource data, TriangulationType triangulationType)
+    private async Task DrawTriangulationProvinces(Image image, Regions[] provinces, DrawingDataSource data, TriangulationType triangulationType)
     {
         var geometriesGroup = provinces
             .Select(x => new PolygonTriangulator(x.Geom).GetResult() as GeometryCollection)
             .Select(x => x.Geometries);
 
-        var pointsGroups = new ConcurrentBag<Point[]>();
+        var pointsGroups = new ConcurrentBag<PointF[]>();
         Parallel.ForEach(geometriesGroup, geometries =>
         {
             foreach (var geometry in geometries)
@@ -78,16 +84,16 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             ? FillPolygonMode.Random
             : FillPolygonMode.NoFill;
         
-        DrawPolygons(graph, pointsGroups, data, fillMode);
+        DrawPolygons(image, pointsGroups, data, fillMode);
     }
 
-    private void DrawProvinces(Graphics graph, Regions[] provinces, DrawingDataSource data)
+    private void DrawProvinces(Image image, Regions[] provinces, DrawingDataSource data)
     {
         var pointsGroups = provinces.Select(x => GetPolygon(x.Geom!.Coordinates, data));
-        DrawPolygons(graph, pointsGroups, data, FillPolygonMode.Gradient);
+        DrawPolygons(image, pointsGroups, data, FillPolygonMode.Gradient);
     }
 
-    private async Task DrawPoints(Graphics graph, DrawingDataSource data)
+    private async Task DrawPoints(Image image, DrawingDataSource data)
     {
         var points = await _geotronicsService.GetAllAsync(data.Offset, data.Limit);
         var relativePoints =
@@ -100,12 +106,15 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             nextBrush.MoveNext();
             var brush = nextBrush.Current;
             foreach (var point in provincePoints)
-                graph.FillEllipse(brush, point.X - data.HalfDotRadius, point.Y - data.HalfDotRadius, data.DotRadius,
-                    data.DotRadius);
+            {
+                EllipsePolygon circle = new EllipsePolygon(point.X - data.HalfDotRadius, point.Y - data.HalfDotRadius, data.DotRadius);
+                image.Mutate(x => x.FillPolygon(brush, circle.Points.ToArray()));
+                // graph.FillEllipse(brush, point.X - data.HalfDotRadius, point.Y - data.HalfDotRadius, data.DotRadius, data.DotRadius);
+            }
         }
     }
     
-    private async Task DrawTriangulationPoints(Graphics graph, DrawingDataSource data, TriangulationType triangulationType)
+    private async Task DrawTriangulationPoints(Image image, DrawingDataSource data, TriangulationType triangulationType)
     {
         var points = await _geotronicsService.GetAllAsync(data.Offset, data.Limit);
 
@@ -119,13 +128,13 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             ? FillPolygonMode.Random
             : FillPolygonMode.NoFill;
         
-        DrawPolygons(graph, pointsGroups, data, fillMode);
+        DrawPolygons(image, pointsGroups, data, fillMode);
     }
 
-    private Point[] GetPolygon(Coordinate[] coordinates, DrawingDataSource data) =>
+    private PointF[] GetPolygon(Coordinate[] coordinates, DrawingDataSource data) =>
         coordinates.Select(c => data.GetCenterPoint(c.X, c.Y)).ToArray();
 
-    private void DrawPolygons(Graphics graph, IEnumerable<Point[]> pointsGroups, DrawingDataSource data,
+    private void DrawPolygons(Image image, IEnumerable<PointF[]> pointsGroups, DrawingDataSource data,
         FillPolygonMode fillMode = FillPolygonMode.NoFill)
     {
         if (fillMode != FillPolygonMode.NoFill)
@@ -134,14 +143,15 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
             {
                 case FillPolygonMode.Gradient:
                     foreach (var points in pointsGroups)
-                        graph.FillPolygon(data.GradientBrush, points);
+                        image.Mutate(x => x.FillPolygon(data.GradientBrush, points));
+                        // graph.FillPolygon(data.GradientBrush, points);
                     break;
                 case FillPolygonMode.Random:
                     var brushEnumerator = DrawingUtils.RandomBrushEnumerator().GetEnumerator();
                     foreach (var points in pointsGroups)
                     {
                         brushEnumerator.MoveNext();
-                        graph.FillPolygon(brushEnumerator.Current, points);
+                        image.Mutate(x => x.FillPolygon(brushEnumerator.Current, points));
                     }
 
                     break;
@@ -149,13 +159,13 @@ public class GeotronicsDrawingService : IGeotronicsDrawingService
         }
 
         foreach (var points in pointsGroups)
-            graph.DrawPolygon(_black_pen, points);
+            image.Mutate(x => x.DrawPolygon(_black_pen, points));
     }
 
     private MemoryStream CreateMemoryStream(Image image)
     {
         var memoryStream = new MemoryStream();
-        image.Save(memoryStream, ImageFormat.Png);
+        image.Save(memoryStream, new PngEncoder());
         memoryStream.Position = 0;
 
         return memoryStream;

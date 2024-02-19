@@ -1,8 +1,8 @@
 using System.Data;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using NetTopologySuite.Geometries;
-using Point = System.Drawing.Point;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing.Processing;
+
 
 namespace Geotronics.Services.Geotronics;
 
@@ -20,15 +20,16 @@ public class DrawingDataSource
         ImageSize = resolution <= MAX_IMAGE_SIZE
             ? resolution
             : throw new InvalidConstraintException("\"Resolution\" parameter must be no more than 20000");
-        DotRadius = (int)(ImageSize * dotSize / 200);
+        DotRadius = (int)(ImageSize * dotSize / 400);
         HalfDotRadius = DotRadius / 2;
         Offset = offset;
         Limit = limit;
         GradientBrush = new LinearGradientBrush(
-            new Point(0, 0),
+            new PointF(0, 0),
             GetCenterPoint(MaxVec.X, MaxVec.Y),
-            Color.Chocolate,
-            Color.Gold);
+            GradientRepetitionMode.None,
+            new ColorStop(0, Color.Chocolate),
+            new ColorStop(1, Color.Gold));
     }
 
     public Coordinate MinVec { get; }
@@ -43,7 +44,7 @@ public class DrawingDataSource
     public int? Limit { get; }
     public LinearGradientBrush GradientBrush { get; }
     
-    public Point GetCenterPoint(double x, double y)  {
+    public PointF GetCenterPoint(double x, double y)  {
         return new(
             (int)((x - MinVec.X) / Width * ImageSize),
             (int)((y - MinVec.Y) / Height * ImageSize * AspectRatio));
